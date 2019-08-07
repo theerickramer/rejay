@@ -2,6 +2,7 @@
 import React, { Component } from 'react';
 import { remote } from 'electron';
 import fs from 'fs';
+import * as mm from 'music-metadata';
 
 type Props = {
   library: object[],
@@ -15,22 +16,35 @@ export default class Library extends Component<Props> {
     super(props);
     const { app } = remote;
     // const musicPath = `${app.getPath('music')}/iTunes/iTunes Media/Music`;
-    const musicPath = `${app.getPath('downloads')}/_MUSIC`;
+    const musicPath = `${app.getPath('downloads')}/_MUSIC/`;
     this.parseFolders(musicPath);
   }
+
+  parseFile = path => {
+    const { addToLib } = this.props;
+    mm.parseFile(path)
+      .then(metadata => {
+        const { album, artist, picture, title } = metadata.common;
+        return addToLib({ album, artist, picture, title });
+      })
+      .catch(error => {
+        console.log(error);
+      });
+  };
 
   parseFolders = path => {
     try {
       fs.readdir(path, 'utf-8', (err, files) => {
         if (err) {
           if (String(err).match(/Error: ENOTDIR: not a directory/)) {
-            if (path.match(/\.aac|\.aif|\.mp3|\.wav/)) {
-              const { addToLib } = this.props;
-              addToLib({ path });
+            // if (path.match(/\.aac|\.aif|\.mp3|\.wav/)) {
+            if (path.match(/\.mp3/)) {
+              this.parseFile(path);
             }
           }
         } else {
           files.forEach(file => {
+            // recursively parse nested folders
             this.parseFolders(`${path}/${file}`);
           });
         }
@@ -57,7 +71,9 @@ export default class Library extends Component<Props> {
         {/* <div onClick={this.openDialog}>Choose Music Folder</div> */}
         {/* <Link to={routes.COUNTER}>to Counter</Link> */}
         {library.map(track => (
-          <li>{track.path}</li>
+          <li>
+            {track.artist} - {track.title}
+          </li>
         ))}
       </ul>
     );

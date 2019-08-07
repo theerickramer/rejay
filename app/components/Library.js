@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { remote } from 'electron';
 import fs from 'fs';
 import * as mm from 'music-metadata';
+import styles from './Library.css';
 
 type Props = {
   library: object[],
@@ -64,17 +65,38 @@ export default class Library extends Component<Props> {
     );
   };
 
-  render() {
+  renderTracks() {
     const { library } = this.props;
+    return library.map(track => {
+      // Ref: https://gist.github.com/candycode/f18ae1767b2b0aba568e
+      let imageUrl;
+      if (track.picture) {
+        const arrayBufferView = new Uint8Array(track.picture[0].data);
+        const blob = new Blob([arrayBufferView], { type: 'image/jpeg' });
+        const urlCreator = window.URL || window.webkitURL;
+        imageUrl = urlCreator.createObjectURL(blob);
+      }
+      return (
+        <li>
+          {track.picture && (
+            <img
+              alt={`${track.artist} ${track.album}`}
+              className={styles.albumImage}
+              src={imageUrl}
+            />
+          )}
+          {track.artist} - {track.title}
+        </li>
+      );
+    });
+  }
+
+  render() {
     return (
       <ul>
         {/* <div onClick={this.openDialog}>Choose Music Folder</div> */}
         {/* <Link to={routes.COUNTER}>to Counter</Link> */}
-        {library.map(track => (
-          <li>
-            {track.artist} - {track.title}
-          </li>
-        ))}
+        {this.renderTracks()}
       </ul>
     );
   }
